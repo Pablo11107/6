@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Socialclub - Share Your Thoughts</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #100F19;
+      color: #fff;
+      opacity: 0;
+      animation: pageFadeIn 0.4s ease forwards;
+    }
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Encabezado */
+    .header {
+      background-color: #00000A;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .header h1 { font-size: 3rem; font-weight: 700; }
+    .header h1 a { text-decoration: none; color: #fff; transition: color 0.2s; }
+    .header h1 a:hover { color: #ccc; }
+
+    /* Caja para compartir publicación */
+    .share-box {
+      background: linear-gradient(180deg, #201F28, #171620);
+      color: #fff;
+      margin: 1.75rem auto;
+      padding: 1.25rem;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .composer-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.9rem;
+    }
+    .composer-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #3F3D46;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #F5F5F7;
+      flex-shrink: 0;
+    }
+    .composer-username {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #ddd;
+    }
+
+    .share-box textarea {
+      width: 100%;
+      min-height: 90px;
+      margin-bottom: 0.9rem;
+      padding: 0.8rem;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      outline: none;
+      background-color: #100F19;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+      resize: none;
+      transition: border-color 0.2s;
+    }
+    .share-box textarea:focus { border-color: #F5F5F7; }
+    .share-box textarea::placeholder { color: #777; }
+
+    .composer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .file-upload label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background-color: #2F2E37;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+    .file-upload label:hover { background-color: #3F3D46; }
+    .file-upload input[type="file"] { display: none; }
+
+    .char-count {
+      font-size: 0.78rem;
+      color: #777;
+    }
+
+    .image-preview-wrap {
+      position: relative;
+      display: none;
+      margin-bottom: 0.9rem;
+    }
+    .image-preview-wrap.show { display: block; }
+    .image-preview-wrap img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      border-radius: 12px;
+      display: block;
+    }
+    .image-preview-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0,0,0,0.65);
+      color: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .image-preview-remove:hover { background-color: rgba(0,0,0,0.85); }
+
+    .share-box button {
+      width: 100%;
+      padding: 0.8rem;
+      background-color: #F5F5F7;
+      color: #100F19;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.15s, opacity 0.2s;
+    }
+    .share-box button:hover:not(:disabled) { background-color: #E3E3E8; }
+    .share-box button:active:not(:disabled) { transform: scale(0.98); }
+    .share-box button:disabled { opacity: 0.5; cursor: default; }
+
+    /* Contenedor de publicaciones */
+    #postsContainer {
+      width: 90%;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #777;
+      font-size: 0.95rem;
+      padding: 2.5rem 1rem;
+    }
+
+    /* Estilo de cada Post */
+    .post {
+      background-color: #201F28;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .post:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    }
+    .post.just-posted {
+      animation: postIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes postIn {
+      from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .post-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1rem;
+    }
+    .post-info { display: flex; align-items: center; gap: 0.7rem; }
+    .post-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #3F3D46;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #F5F5F7;
+      flex-shrink: 0;
+    }
+    .post-username { font-weight: 700; color: #F5F5F7; font-size: 0.95rem; }
+    .post-brand { font-size: 1.2rem; font-weight: 700; color: #55525f; }
+
+    .post-body { padding: 0 1rem 1.1rem; }
+    .post-body p {
+      margin-bottom: 0.8rem;
+      line-height: 1.5;
+      color: #eee;
+      white-space: pre-wrap;
+    }
+    .post-body img {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 0.4rem;
+      display: block;
+    }
+
+    /* Toast */
+    .focus-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translate(-50%, 16px);
+      background-color: #201F28;
+      color: #F5F5F7;
+      padding: 0.8rem 1.4rem;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+      max-width: 85%;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 1200;
+    }
+    .focus-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* Footer */
+    .footer { background-color: #00000A; padding: 1rem 0; text-align: center; }
+    .bottom-nav { display: flex; justify-content: space-around; align-items: center; }
+    .nav-item { text-align: center; }
+    .nav-item a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: #fff;
+      transition: opacity 0.2s;
+    }
+    .nav-item span { font-size: 0.9rem; margin-top: 0.5rem; }
+    .nav-item a:hover { opacity: 0.75; }
+    .image {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+      border-radius: 50%;
+      background-color: #201F28;
+    }
+    .image img { width: 100%; height: 100%; object-fit: cover; }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado principal -->
+  <header class="header">
+    <h1><a href="index.html">Focus.</a></h1>
+  </header>
+
+  <!-- Caja para compartir reflexiones -->
+  <section class="share-box">
+    <div class="composer-top">
+      <div class="composer-avatar" id="composerAvatar"></div>
+      <span class="composer-username" id="composerUsername">@FocusUser</span>
+    </div>
+
+    <textarea id="postText" placeholder="Share your Focus. thoughts..." maxlength="500"></textarea>
+
+    <div class="image-preview-wrap" id="imagePreviewWrap">
+      <img id="imagePreviewImg" src="" alt="Preview">
+      <div class="image-preview-remove" id="imagePreviewRemove">✕</div>
+    </div>
+
+    <div class="composer-footer">
+      <div class="file-upload">
+        <label for="postImage">📷 Attach Image</label>
+        <input type="file" id="postImage" accept="image/*">
+      </div>
+      <span class="char-count" id="charCount">0 / 500</span>
+    </div>
+
+    <button id="postButton">Post</button>
+  </section>
+
+  <!-- Contenedor donde se mostrarán los posts -->
+  <section id="postsContainer"></section>
+
+  <!-- Footer con navegación inferior -->
+  <footer class="footer">
+    <nav class="bottom-nav">
+      <div class="nav-item">
+        <a href="memories.html">
+          <div class="image"><img src="memories.webp" alt="Memories"></div>
+          <span>Memories.</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="socialclub.html">
+          <div class="image"><img src="person.png" alt="Socialclub"></div>
+          <span>Socialclub.</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="communities.html">
+          <div class="image"><img src="communities.png" alt="Communities"></div>
+          <span>Communities.</span>
+        </a>
+      </div>
+    </nav>
+  </footer>
+
+  <!-- Toast -->
+  <div class="focus-toast" id="focusToast"></div>
+
+  <!-- JavaScript -->
+  <script type="module">
+    import { requireAuth, loadUserDoc, addItem, getItems } from "./firebase-init.js";
+
+    const user = await requireAuth();
+    const uid = user.uid;
+
+    const postText          = document.getElementById('postText');
+    const postImage         = document.getElementById('postImage');
+    const postButton        = document.getElementById('postButton');
+    const postsContainer    = document.getElementById('postsContainer');
+    const charCount         = document.getElementById('charCount');
+    const imagePreviewWrap  = document.getElementById('imagePreviewWrap');
+    const imagePreviewImg   = document.getElementById('imagePreviewImg');
+    const imagePreviewRemove= document.getElementById('imagePreviewRemove');
+    const composerAvatar    = document.getElementById('composerAvatar');
+    const composerUsername  = document.getElementById('composerUsername');
+    const focusToast        = document.getElementById('focusToast');
+
+    let toastTimer;
+    function showToast(message) {
+      focusToast.textContent = message;
+      focusToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => focusToast.classList.remove('show'), 2400);
+    }
+
+    // Cargamos el perfil para mostrar avatar/usuario reales
+    const savedData = await loadUserDoc(uid);
+    const profileInfo = savedData.profileInfo || {};
+    const displayName = profileInfo.userName || profileInfo.realName || "FocusUser";
+    const initial = displayName.charAt(0).toUpperCase();
+
+    function applyAvatar(el) {
+      if (profileInfo.profilePic) {
+        el.style.backgroundImage = `url(${profileInfo.profilePic})`;
+        el.textContent = "";
+      } else {
+        el.textContent = initial;
+      }
+    }
+    applyAvatar(composerAvatar);
+    composerUsername.textContent = "@" + displayName;
+
+    // Cargamos los posts guardados de este usuario desde Firestore
+    let posts = await getItems(uid, "posts", 30);
+    renderPosts();
+
+    function renderPosts(animateFirst = false) {
+      if (posts.length === 0) {
+        postsContainer.innerHTML = `<p class="empty-state">No posts yet — share your first Focus moment above.</p>`;
+        return;
+      }
+
+      postsContainer.innerHTML = posts.map((post, i) => `
+        <article class="post ${animateFirst && i === 0 ? 'just-posted' : ''}">
+          <div class="post-top">
+            <div class="post-info">
+              <div class="post-avatar" style="${profileInfo.profilePic ? `background-image:url(${profileInfo.profilePic})` : ''}">
+                ${profileInfo.profilePic ? '' : initial}
+              </div>
+              <span class="post-username">@${displayName}</span>
+            </div>
+            <span class="post-brand">F.</span>
+          </div>
+          <div class="post-body">
+            <p>${escapeHtml(post.text)}</p>
+            ${post.image ? `<img src="${post.image}" alt="Post Image">` : ''}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    postText.addEventListener('input', () => {
+      charCount.textContent = `${postText.value.length} / 500`;
+    });
+
+    postImage.addEventListener('change', () => {
+      const file = postImage.files[0];
+      if (!file) { imagePreviewWrap.classList.remove('show'); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        imagePreviewImg.src = reader.result;
+        imagePreviewWrap.classList.add('show');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    imagePreviewRemove.addEventListener('click', () => {
+      postImage.value = '';
+      imagePreviewWrap.classList.remove('show');
+    });
+
+    async function savePost() {
+      const textValue = postText.value.trim();
+      if (!textValue && !postImage.files[0]) {
+        showToast("Write something or attach an image first.");
+        return;
+      }
+
+      postButton.disabled = true;
+      postButton.textContent = "Posting...";
+
+      const finishSave = async (imageData) => {
+        const newPost = { text: textValue, image: imageData || null };
+        try {
+          await addItem(uid, "posts", newPost);
+          posts.unshift(newPost);
+          renderPosts(true);
+          postText.value = '';
+          postImage.value = '';
+          imagePreviewWrap.classList.remove('show');
+          charCount.textContent = "0 / 500";
+          showToast("Posted to Socialclub!");
+        } catch (err) {
+          console.error(err);
+          showToast("Couldn't publish your post. Try again.");
+        } finally {
+          postButton.disabled = false;
+          postButton.textContent = "Post";
+        }
+      };
+
+      if (postImage.files[0]) {
+        const reader = new FileReader();
+        reader.onload = () => finishSave(reader.result);
+        reader.readAsDataURL(postImage.files[0]);
+      } else {
+        finishSave(null);
+      }
+    }
+
+    postButton.addEventListener('click', savePost);
+
+    /* -- Transición dinámica entre páginas -- */
+    document.querySelectorAll('.nav-item a, .header h1 a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        e.preventDefault();
+        document.body.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        document.body.style.opacity = '0';
+        document.body.style.transform = 'translateY(-6px)';
+        setTimeout(() => { window.location.href = href; }, 200);
+      });
+    });
+  </script>
+</body>
+</html>

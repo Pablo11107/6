@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memories - Instant Pictures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #100F19;
+      color: #fff;
+      opacity: 0;
+      animation: pageFadeIn 0.4s ease forwards;
+    }
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Encabezado */
+    .header {
+      background-color: #00000A;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .header h1 { font-size: 3rem; font-weight: 700; }
+    .header h1 a { text-decoration: none; color: #fff; transition: color 0.2s; }
+    .header h1 a:hover { color: #ccc; }
+
+    /* Sección de fotos instantáneas */
+    .main-section {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+    }
+    .main-section h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .instant-pictures {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(180deg, #201F28, #100F19);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+      width: 90%;
+      max-width: 600px;
+      padding: 1.75rem 1rem;
+      margin: 0 auto 1.5rem;
+      overflow: hidden;
+    }
+
+    .flash-overlay {
+      position: absolute;
+      inset: 0;
+      background-color: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+      transition: opacity 0.08s ease;
+    }
+    .flash-overlay.flash {
+      opacity: 0.9;
+      transition: opacity 0.03s ease;
+    }
+
+    .camera-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      width: 100%;
+    }
+
+    .video-frame {
+      width: 100%;
+      max-width: 460px;
+      border-radius: 14px;
+      overflow: hidden;
+      background-color: #000;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+      aspect-ratio: 4 / 3;
+    }
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .camera-fallback {
+      display: none;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      color: #777;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 1rem;
+    }
+    #canvas { display: none; }
+
+    /* Botón de captura (obturador) */
+    .camera-buttons button {
+      width: 66px;
+      height: 66px;
+      background-color: #F5F5F7;
+      border: 4px solid #3F3D46;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.2s, border-color 0.2s;
+    }
+    .camera-buttons button:hover {
+      transform: scale(1.06);
+      border-color: #55525f;
+    }
+    .camera-buttons button:active {
+      transform: scale(0.9);
+      background-color: #d9d8e0;
+    }
+
+    /* Sección de fotos recientes */
+    .photos-section {
+      text-align: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+    .photos-section h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+    }
+
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .photo-item {
+      background-color: #201F28;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .photo-item:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-item.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      border: 1.5px dashed #2F2E37;
+      background-color: transparent;
+      box-shadow: none;
+    }
+    .photo-item.empty:hover { transform: none; box-shadow: none; }
+    .photo-item.empty .empty-icon {
+      font-size: 1.4rem;
+      opacity: 0.35;
+    }
+    .photo-item.just-added {
+      animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Lightbox */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .lightbox-overlay.open { opacity: 1; pointer-events: auto; }
+    .lightbox-card {
+      position: relative;
+      max-width: 90%;
+      max-height: 85vh;
+      transform: scale(0.9);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .lightbox-overlay.open .lightbox-card { transform: scale(1); }
+    .lightbox-card img {
+      max-width: 100%;
+      max-height: 85vh;
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+      display: block;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #F5F5F7;
+      color: #100F19;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: background-color 0.2s;
+    }
+    .lightbox-close:hover { background-color: #E3E3E8; }
+
+    /* Toast */
+    .focus-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translate(-50%, 16px);
+      background-color: #201F28;
+      color: #F5F5F7;
+      padding: 0.8rem 1.4rem;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+      max-width: 85%;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 1200;
+    }
+    .focus-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* Footer */
+    .footer { background-color: #00000A; padding: 1rem 0; }
+    .bottom-nav { display: flex; justify-content: space-around; align-items: center; }
+    .nav-item { text-align: center; }
+    .nav-item a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: #fff;
+      transition: opacity 0.2s;
+    }
+    .nav-item a:hover { opacity: 0.75; }
+    .nav-item span { font-size: 0.9rem; margin-top: 0.5rem; }
+    .image {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #201F28;
+    }
+    .image img { width: 100%; height: 100%; object-fit: cover; }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado -->
+  <header class="header">
+    <h1><a href="index.html">Focus.</a></h1>
+  </header>
+
+  <!-- Sección principal -->
+  <section class="main-section">
+    <h2>Instant Pictures</h2>
+    <div class="instant-pictures">
+      <div class="flash-overlay" id="flashOverlay"></div>
+      <div class="camera-container">
+        <div class="video-frame">
+          <video id="video" autoplay playsinline></video>
+          <div class="camera-fallback" id="cameraFallback">No se pudo acceder a la cámara.<br>Revisa los permisos del navegador.</div>
+        </div>
+        <canvas id="canvas"></canvas>
+        <div class="camera-buttons">
+          <button id="snap" aria-label="Take photo"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sección de fotos recientes -->
+  <section class="photos-section">
+    <h3>Focus. lately in photos</h3>
+    <div class="photos-grid" id="photosGrid"></div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <nav class="bottom-nav">
+      <div class="nav-item">
+        <a href="memories.html">
+          <div class="image"><img src="memories.webp" alt="Memories"></div>
+          <span>Memories.</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="socialclub.html">
+          <div class="image"><img src="person.png" alt="Socialclub"></div>
+          <span>Socialclub.</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="communities.html">
+          <div class="image"><img src="communities.png" alt="Communities"></div>
+          <span>Communities.</span>
+        </a>
+      </div>
+    </nav>
+  </footer>
+
+  <!-- Lightbox -->
+  <div class="lightbox-overlay" id="lightboxOverlay">
+    <div class="lightbox-card">
+      <div class="lightbox-close" id="closeLightbox">✕</div>
+      <img id="lightboxImg" src="" alt="Focus memory">
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="focus-toast" id="focusToast"></div>
+
+  <script type="module">
+    import { requireAuth, addItem, getItems, deleteItem } from "./firebase-init.js";
+
+    const user = await requireAuth();
+    const uid = user.uid;
+
+    const video          = document.getElementById('video');
+    const cameraFallback = document.getElementById('cameraFallback');
+    const canvas         = document.getElementById('canvas');
+    const snapButton     = document.getElementById('snap');
+    const flashOverlay   = document.getElementById('flashOverlay');
+    const photosGrid     = document.getElementById('photosGrid');
+    const context        = canvas.getContext('2d');
+
+    const lightboxOverlay = document.getElementById('lightboxOverlay');
+    const lightboxImg     = document.getElementById('lightboxImg');
+    const closeLightbox   = document.getElementById('closeLightbox');
+
+    const focusToast = document.getElementById('focusToast');
+    let toastTimer;
+    function showToast(message) {
+      focusToast.textContent = message;
+      focusToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => focusToast.classList.remove('show'), 2400);
+    }
+
+    const MAX_PHOTOS = 10;
+
+    // Cargamos las últimas fotos de este usuario desde Firestore
+    let photos = await getItems(uid, "photos", MAX_PHOTOS);
+    renderPhotos();
+
+    function renderPhotos(animateFirst = false) {
+      photosGrid.innerHTML = '';
+      for (let i = 0; i < MAX_PHOTOS; i++) {
+        const p = photos[i];
+        const item = document.createElement('div');
+        item.className = 'photo-item' + (animateFirst && i === 0 ? ' just-added' : '');
+
+        if (p) {
+          const img = document.createElement('img');
+          img.src = p.image;
+          img.alt = 'Focus memory';
+          item.appendChild(img);
+          item.addEventListener('click', () => openLightbox(p.image));
+        } else {
+          item.classList.add('empty');
+          item.innerHTML = '<span class="empty-icon">📷</span>';
+        }
+        photosGrid.appendChild(item);
+      }
+    }
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightboxOverlay.classList.add('open');
+    }
+    function closeLightboxFn() {
+      lightboxOverlay.classList.remove('open');
+    }
+    closeLightbox.addEventListener('click', closeLightboxFn);
+    lightboxOverlay.addEventListener('click', (e) => {
+      if (e.target === lightboxOverlay) closeLightboxFn();
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(() => {
+        video.style.display = 'none';
+        cameraFallback.style.display = 'flex';
+        showToast("No se pudo acceder a la cámara.");
+      });
+
+    snapButton.addEventListener('click', async () => {
+      if (!video.srcObject) {
+        showToast("La cámara no está disponible ahora mismo.");
+        return;
+      }
+
+      // Efecto flash
+      flashOverlay.classList.add('flash');
+      setTimeout(() => flashOverlay.classList.remove('flash'), 120);
+
+      canvas.width = 300;
+      canvas.height = 200;
+      context.drawImage(video, 0, 0, 300, 200);
+      const imgUrl = canvas.toDataURL('image/jpeg', 0.5);
+
+      try {
+        const newId = await addItem(uid, "photos", { image: imgUrl });
+        photos.unshift({ id: newId, image: imgUrl });
+
+        if (photos.length > MAX_PHOTOS) {
+          const oldest = photos.pop();
+          if (oldest?.id) await deleteItem(uid, "photos", oldest.id);
+        }
+
+        renderPhotos(true);
+        showToast("Photo saved to your memories!");
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo guardar la foto. Inténtalo de nuevo.");
+      }
+    });
+
+    /* -- Transición dinámica entre páginas -- */
+    document.querySelectorAll('.nav-item a, .header h1 a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        e.preventDefault();
+        document.body.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        document.body.style.opacity = '0';
+        document.body.style.transform = 'translateY(-6px)';
+        setTimeout(() => { window.location.href = href; }, 200);
+      });
+    });
+  </script>
+</body>
+</html>
